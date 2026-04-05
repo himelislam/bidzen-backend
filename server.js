@@ -1,9 +1,6 @@
 const express = require('express');
-const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-
-// Load env vars
-dotenv.config();
+const config = require('./src/config/env');
 
 const app = express();
 
@@ -18,25 +15,47 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to BidZen API v1.0.0'
+  });
+});
+
 // Connect to MongoDB
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    // Check if MONGO_URI is defined
+    if (!config.mongo.uri) {
+      throw new Error('MONGO_URI is not defined in environment variables');
+    }
+
+    // MongoDB connection options
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    };
+
+    const conn = await mongoose.connect(config.mongo.uri, options);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn;
   } catch (error) {
-    console.error('Database connection error:', error);
+    console.error('Database connection error:', error.message);
     process.exit(1);
   }
 };
 
-// Start server
-const PORT = process.env.PORT || 5000;
-
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+
+  try {
+    app.listen(config.app.port, () => {
+      console.log(`Server running on port ${config.app.port}`);
+    });
+  } catch (error) {
+    console.error('Server error:', error.message);
+    process.exit(1);
+  }
 };
 
 startServer();

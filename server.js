@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const config = require('./src/config/env');
+const authRoutes = require('./src/routes/auth.routes');
+const errorHandler = require('./src/utils/errorHandler');
 
 const app = express();
 
@@ -21,6 +23,12 @@ app.get('/', (req, res) => {
     message: 'Welcome to BidZen API v1.0.0'
   });
 });
+
+// API routes
+app.use('/api/auth', authRoutes);
+
+// Global error handler (must be last middleware)
+app.use(errorHandler);
 
 // Connect to MongoDB
 const connectDB = async () => {

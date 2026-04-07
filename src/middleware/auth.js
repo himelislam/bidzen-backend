@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
+const config = require('../config/env');
 
 // Protect middleware - verify JWT and attach user to request
 const protect = async (req, res, next) => {
@@ -16,7 +17,7 @@ const protect = async (req, res, next) => {
     }
 
     // 2) Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.jwt.secret);
 
     // 3) Check if user still exists and is active
     const currentUser = await User.findById(decoded.id);

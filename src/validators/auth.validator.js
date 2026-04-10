@@ -12,7 +12,7 @@ const registerSchema = Joi.object({
       'string.min': 'Name must be at least 2 characters long',
       'string.max': 'Name cannot exceed 50 characters'
     }),
-  
+
   email: Joi.string()
     .required()
     .email()
@@ -22,7 +22,7 @@ const registerSchema = Joi.object({
       'string.email': 'Please provide a valid email address',
       'string.empty': 'Email is required'
     }),
-  
+
   password: Joi.string()
     .required()
     .min(6)
@@ -30,12 +30,12 @@ const registerSchema = Joi.object({
       'string.empty': 'Password is required',
       'string.min': 'Password must be at least 6 characters long'
     }),
-  
+
   role: Joi.string()
     .required()
-    .valid('buyer', 'seller')
+    .valid('buyer', 'seller', 'admin')
     .messages({
-      'any.only': 'Role must be either buyer or seller',
+      'any.only': 'Role must be either buyer, seller, or admin',
       'string.empty': 'Role is required'
     })
 });
@@ -51,7 +51,7 @@ const loginSchema = Joi.object({
       'string.email': 'Please provide a valid email address',
       'string.empty': 'Email is required'
     }),
-  
+
   password: Joi.string()
     .required()
     .messages({
@@ -63,14 +63,14 @@ const loginSchema = Joi.object({
 const validate = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
-    
+
     if (error) {
       return res.status(400).json({
         success: false,
         message: error.details[0].message
       });
     }
-    
+
     next();
   };
 };

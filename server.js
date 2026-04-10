@@ -5,6 +5,7 @@ const authRoutes = require('./src/routes/auth.routes');
 const auctionRoutes = require('./src/routes/auction.routes');
 const bidRoutes = require('./src/routes/bid.routes');
 const feedbackRoutes = require('./src/routes/feedback.routes');
+const adminRoutes = require('./src/routes/admin.routes');
 const errorHandler = require('./src/utils/errorHandler');
 const { startAuctionTimer } = require('./src/jobs/auctionTimer');
 
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/auctions', bidRoutes);      // Bid routes are nested under auctions
 app.use('/api/auctions', feedbackRoutes); // Feedback routes are nested under auctions
+app.use('/api/admin', adminRoutes);      // Admin routes
 
 // Global error handler (must be last middleware)
 app.use(errorHandler);

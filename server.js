@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const config = require('./src/config/env');
 const authRoutes = require('./src/routes/auth.routes');
+const auctionRoutes = require('./src/routes/auction.routes');
 const errorHandler = require('./src/utils/errorHandler');
 
 const app = express();
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auctions', auctionRoutes);
 
 // Global error handler (must be last middleware)
 app.use(errorHandler);

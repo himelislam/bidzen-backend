@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const config = require('./src/config/env');
 const authRoutes = require('./src/routes/auth.routes');
 const auctionRoutes = require('./src/routes/auction.routes');
+const bidRoutes = require('./src/routes/bid.routes');
 const errorHandler = require('./src/utils/errorHandler');
+const { startAuctionTimer } = require('./src/jobs/auctionTimer');
 
 const app = express();
 
@@ -28,6 +30,7 @@ app.get('/', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auctions', auctionRoutes);
+app.use('/api/auctions', bidRoutes);  // Bid routes are nested under auctions
 
 // Global error handler (must be last middleware)
 app.use(errorHandler);
@@ -57,6 +60,9 @@ const connectDB = async () => {
 
 const startServer = async () => {
   await connectDB();
+
+  // Start auction timer job after DB connection
+  startAuctionTimer();
 
   try {
     app.listen(config.app.port, () => {

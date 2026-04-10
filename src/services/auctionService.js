@@ -160,3 +160,72 @@ exports.validateAuctionStatus = async (auctionId, allowedStatus = 'scheduled') =
         throw error;
     }
 };
+
+// WINNER DETERMINATION - Close auction and determine winner
+exports.closeAuction = async (auctionId, startingPrice) => {
+    try {
+        // Find the highest bid for this auction
+        const winningBid = await Bid.findOne({ auction: auctionId })
+            .sort({ amount: -1 })
+            .populate('bidder', 'name email')
+            .lean();
+
+        const updateData = { status: 'closed' };
+
+        if (winningBid) {
+            updateData.winner = winningBid.bidder._id;
+
+            // Flag if winning bid is below 50% of starting price
+            if (winningBid.amount < startingPrice * 0.5) {
+                updateData.flaggedForReview = true;
+                console.log(`Auction ${auctionId} flagged for review: winning bid (${winningBid.amount}) is below 50% of starting price (${startingPrice})`);
+            }
+
+            console.log(`Auction ${auctionId} closed. Winner: ${winningBid.bidder.name} (${winningBid.bidder.email}) with bid: ${winningBid.amount}`);
+        } else {
+            console.log(`Auction ${auctionId} closed with no bids`);
+        }
+
+        // Update auction with winner and status
+        const closedAuction = await Auction.findByIdAndUpdate(
+            auctionId,
+            updateData,
+            { new: true }
+        ).populate('winner', 'name email');
+
+        return closedAuction;
+    } catch (error) {
+        console.error(`Error closing auction ${auctionId}:`, error);
+        throw error;
+    }
+};
+
+// Get auctions that need to be closed (for cron job)
+exports.getAuctionsToClose = async () => {
+    try {
+        const now = new Date();
+        const auctions = await Auction.find({
+            status: 'active',
+            endTime: { $lte: now }
+        }, '_id startingPrice seller').lean();
+
+        return auctions;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Get auctions that need to be activated (for cron job)
+exports.getAuctionsToActivate = async () => {
+    try {
+        const now = new Date();
+        const auctions = await Auction.find({
+            status: 'scheduled',
+            startTime: { $lte: now }
+        }, '_id').lean();
+
+        return auctions;
+    } catch (error) {
+        throw error;
+    }
+};

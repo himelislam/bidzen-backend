@@ -15,7 +15,8 @@ const app = express();
 // CORS configuration - Allow requests from local frontend
 app.use(cors({
   origin: [
-    'http://127.0.0.1:5173'
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const config = require('./src/config/env');
 const authRoutes = require('./src/routes/auth.routes');
 const auctionRoutes = require('./src/routes/auction.routes');
@@ -10,6 +11,16 @@ const errorHandler = require('./src/utils/errorHandler');
 const { startAuctionTimer } = require('./src/jobs/auctionTimer');
 
 const app = express();
+
+// CORS configuration - Allow requests from local frontend
+app.use(cors({
+  origin: [
+    'http://127.0.0.1:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Body parser
 app.use(express.json());

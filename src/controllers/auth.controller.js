@@ -17,6 +17,11 @@ exports.register = async (req, res, next) => {
     try {
         const { name, email, password, role } = req.body;
 
+        // Prevent admin registration via public API
+        if (role === 'admin') {
+            return next(new ApiError('Admin registration is not allowed via public API', 403));
+        }
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -41,7 +46,9 @@ exports.register = async (req, res, next) => {
             email: user.email,
             role: user.role,
             isActive: user.isActive,
-            createdAt: user.createdAt
+            profile: user.profile,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
         };
 
         res.status(201).json({
@@ -49,7 +56,8 @@ exports.register = async (req, res, next) => {
             data: {
                 user: userResponse,
                 token
-            }
+            },
+            message: "User registered successfully"
         });
     } catch (error) {
         next(error);
@@ -88,7 +96,9 @@ exports.login = async (req, res, next) => {
             email: user.email,
             role: user.role,
             isActive: user.isActive,
-            createdAt: user.createdAt
+            profile: user.profile,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
         };
 
         res.status(200).json({
@@ -96,7 +106,8 @@ exports.login = async (req, res, next) => {
             data: {
                 user: userResponse,
                 token
-            }
+            },
+            message: "Login successful"
         });
     } catch (error) {
         next(error);

@@ -74,7 +74,7 @@ exports.getFlaggedAuctions = async (req, res, next) => {
 exports.resolveFlaggedAuction = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { action, notes } = req.body; // action: 'approve', 'reject', 'investigate'
+        const { flaggedForReview, adminNote } = req.body;
 
         // Find the auction
         const auction = await Auction.findById(id)
@@ -90,11 +90,11 @@ exports.resolveFlaggedAuction = async (req, res, next) => {
         }
 
         // Update auction based on admin action
-        const updateData = { flaggedForReview: false };
+        const updateData = { flaggedForReview: flaggedForReview !== undefined ? flaggedForReview : false };
 
-        // Add admin notes if provided
-        if (notes) {
-            updateData.adminNotes = notes;
+        // Add admin note if provided
+        if (adminNote) {
+            updateData.adminNote = adminNote;
         }
 
         // Add admin action tracking
@@ -108,16 +108,13 @@ exports.resolveFlaggedAuction = async (req, res, next) => {
         const updatedAuction = await Auction.findByIdAndUpdate(
             id,
             updateData,
-            { new: true }
-        ).populate('seller winner', 'name email');
-
-        // Log the admin action
-        console.log(`Admin ${req.user.email} ${action} flagged auction ${id}: ${auction.title}`);
+            { new: true, runValidators: true }
+        ).select('flaggedForReview adminNote updatedAt');
 
         res.status(200).json({
             success: true,
-            data: { auction: updatedAuction },
-            message: `Auction flag resolved with action: ${action}`
+            data: updatedAuction,
+            message: 'Flag resolved successfully'
         });
     } catch (error) {
         next(error);

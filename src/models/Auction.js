@@ -9,20 +9,30 @@ const AuctionSchema = new mongoose.Schema({
   title: {
     type: String,
     required: [true, 'Title is required'],
-    trim: true
+    trim: true,
+    minlength: [3, 'Title must be at least 3 characters'],
+    maxlength: [100, 'Title cannot exceed 100 characters']
   },
   description: {
     type: String,
-    required: [true, 'Description is required']
+    required: [true, 'Description is required'],
+    minlength: [10, 'Description must be at least 10 characters'],
+    maxlength: [1000, 'Description cannot exceed 1000 characters']
   },
   startingPrice: {
     type: Number,
     required: [true, 'Starting price is required'],
-    min: [0, 'Starting price must be positive']
+    min: [1, 'Starting price must be at least 1']
   },
   currentHighestBid: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Current highest bid cannot be negative']
+  },
+  category: {
+    type: String,
+    enum: ['electronics', 'fashion', 'luxury', 'gaming', 'professional', 'collectibles', 'automotive', 'home', 'other'],
+    default: 'other'
   },
   winner: {
     type: mongoose.Schema.Types.ObjectId,
@@ -36,22 +46,41 @@ const AuctionSchema = new mongoose.Schema({
   },
   startTime: {
     type: Date,
-    required: [true, 'Start time is required']
+    required: [true, 'Start time is required'],
+    validate: {
+      validator: function (value) {
+        return value > new Date();
+      },
+      message: 'Start time must be in the future'
+    }
   },
   endTime: {
     type: Date,
-    required: [true, 'End time is required']
+    required: [true, 'End time is required'],
+    validate: {
+      validator: function (value) {
+        return value > this.startTime;
+      },
+      message: 'End time must be after start time'
+    }
   },
   flaggedForReview: {
     type: Boolean,
     default: false
+  },
+  bidCount: {
+    type: Number,
+    default: 0,
+    min: [0, 'Bid count cannot be negative']
   }
 }, {
   timestamps: true
 });
 
-// Indexes
+// Indexes for performance and queries
 AuctionSchema.index({ seller: 1 });
 AuctionSchema.index({ status: 1, endTime: 1 });
+AuctionSchema.index({ category: 1 });
+AuctionSchema.index({ flaggedForReview: 1 });
 
 module.exports = mongoose.model('Auction', AuctionSchema);

@@ -4,10 +4,10 @@ const Joi = require('joi');
 const bidSchema = Joi.object({
     amount: Joi.number()
         .required()
-        .min(0)
+        .min(1)
         .messages({
             'number.base': 'Bid amount must be a number',
-            'number.min': 'Bid amount must be positive',
+            'number.min': 'Bid amount must be at least 1',
             'any.required': 'Bid amount is required'
         })
 });

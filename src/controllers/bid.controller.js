@@ -104,7 +104,7 @@ exports.getBidHistory = async (req, res, next) => {
             data: {
                 bids,
                 auction: {
-                    id: auction._id,
+                    _id: auction._id,
                     title: auction.title,
                     currentHighestBid: auction.currentHighestBid,
                     status: auction.status,
@@ -129,8 +129,14 @@ exports.getMyBidHistory = async (req, res, next) => {
         const { page = 1, limit = 20 } = req.query;
 
         const bids = await Bid.find({ bidder: req.user._id })
-            .populate('auction', 'title endTime status currentHighestBid')
-            .populate('auction.seller', 'name email')
+            .populate({
+                path: 'auction',
+                select: 'title endTime status currentHighestBid startingPrice seller',
+                populate: {
+                    path: 'seller',
+                    select: 'name email'
+                }
+            })
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit)

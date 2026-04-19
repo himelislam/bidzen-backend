@@ -32,7 +32,9 @@ const FeedbackSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
+// Compound unique index ensures one review per user per auction
 FeedbackSchema.index({ auction: 1, author: 1 }, { unique: true });
+FeedbackSchema.index({ recipient: 1 }); // For user received feedback
+FeedbackSchema.index({ author: 1 }); // For user given feedback
 
 module.exports = mongoose.model('Feedback', FeedbackSchema);

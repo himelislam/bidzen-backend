@@ -16,20 +16,27 @@ const createAuctionSchema = Joi.object({
     description: Joi.string()
         .required()
         .min(10)
-        .max(2000)
+        .max(1000)
         .messages({
             'string.empty': 'Description is required',
             'string.min': 'Description must be at least 10 characters long',
-            'string.max': 'Description cannot exceed 2000 characters'
+            'string.max': 'Description cannot exceed 1000 characters'
         }),
 
     startingPrice: Joi.number()
         .required()
-        .min(0)
+        .min(1)
         .messages({
             'number.base': 'Starting price must be a number',
-            'number.min': 'Starting price must be positive',
+            'number.min': 'Starting price must be at least 1',
             'any.required': 'Starting price is required'
+        }),
+
+    category: Joi.string()
+        .valid('electronics', 'fashion', 'luxury', 'gaming', 'professional', 'collectibles', 'automotive', 'home', 'other')
+        .default('other')
+        .messages({
+            'any.only': 'Category must be one of: electronics, fashion, luxury, gaming, professional, collectibles, automotive, home, other'
         }),
 
     startTime: Joi.date()
@@ -64,17 +71,23 @@ const updateAuctionSchema = Joi.object({
 
     description: Joi.string()
         .min(10)
-        .max(2000)
+        .max(1000)
         .messages({
             'string.min': 'Description must be at least 10 characters long',
-            'string.max': 'Description cannot exceed 2000 characters'
+            'string.max': 'Description cannot exceed 1000 characters'
         }),
 
     startingPrice: Joi.number()
-        .min(0)
+        .min(1)
         .messages({
             'number.base': 'Starting price must be a number',
-            'number.min': 'Starting price must be positive'
+            'number.min': 'Starting price must be at least 1'
+        }),
+
+    category: Joi.string()
+        .valid('electronics', 'fashion', 'luxury', 'gaming', 'professional', 'collectibles', 'automotive', 'home', 'other')
+        .messages({
+            'any.only': 'Category must be one of: electronics, fashion, luxury, gaming, professional, collectibles, automotive, home, other'
         }),
 
     startTime: Joi.date()

@@ -7,20 +7,25 @@ const auctionRoutes = require('./src/routes/auction.routes');
 const bidRoutes = require('./src/routes/bid.routes');
 const feedbackRoutes = require('./src/routes/feedback.routes');
 const adminRoutes = require('./src/routes/admin.routes');
+const userRoutes = require('./src/routes/user.routes');
 const errorHandler = require('./src/utils/errorHandler');
 const { startAuctionTimer } = require('./src/jobs/auctionTimer');
 
 const app = express();
 
 // CORS configuration - Allow requests from local frontend
+// app.use(cors({
+//   origin: [
+//     '*',
+//   ],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
 app.use(cors({
-  origin: [
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: '*',
+  credentials: false
 }));
 
 // Body parser
@@ -43,10 +48,11 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/auctions', auctionRoutes);
-app.use('/api/auctions', bidRoutes);      // Bid routes are nested under auctions
-app.use('/api/auctions', feedbackRoutes); // Feedback routes are nested under auctions
+app.use('/api/auctions', bidRoutes);      // Bid routes first (my-bids)
+app.use('/api/auctions', feedbackRoutes); // Feedback routes second  
+app.use('/api/auctions', auctionRoutes);  // Auction routes last (/:id)
 app.use('/api/admin', adminRoutes);      // Admin routes
+app.use('/api/users', userRoutes);       // User routes
 
 // Global error handler (must be last middleware)
 app.use(errorHandler);

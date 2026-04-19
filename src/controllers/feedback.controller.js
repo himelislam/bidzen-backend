@@ -121,7 +121,7 @@ exports.getAuctionFeedback = async (req, res, next) => {
             data: {
                 feedbacks,
                 auction: {
-                    id: auction._id,
+                    _id: auction._id,
                     title: auction.title,
                     status: auction.status
                 },

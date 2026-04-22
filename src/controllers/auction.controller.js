@@ -1,13 +1,50 @@
 const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
 const ApiError = require('../utils/ApiError');
+const { cloudinary, uploadToCloudinary } = require('../config/cloudinary');
 
 // Create new auction (seller only)
 exports.createAuction = async (req, res, next) => {
     try {
         const { title, description, startingPrice, startTime, endTime, category } = req.body;
 
-        // Create auction with seller from authenticated user
+        // Process uploaded images - manual Cloudinary upload
+        let images = [];
+        if (req.files && req.files.length > 0) {
+            console.log('Processing uploaded files:', req.files.length);
+
+            // Upload each file to Cloudinary manually
+            const uploadPromises = req.files.map(async (file) => {
+                console.log('Uploading file:', file.originalname);
+                console.log('File size:', file.size);
+                console.log('File mimetype:', file.mimetype);
+
+                try {
+                    const result = await uploadToCloudinary(file.buffer, file.originalname);
+
+                    return {
+                        publicId: result.public_id,
+                        url: result.url,
+                        secureUrl: result.secure_url,
+                        format: result.format,
+                        width: result.width,
+                        height: result.height,
+                        size: result.bytes,
+                        resourceType: result.resource_type,
+                        createdAt: new Date()
+                    };
+                } catch (error) {
+                    console.error('Failed to upload file:', file.originalname, error);
+                    throw new Error(`Failed to upload ${file.originalname}: ${error.message}`);
+                }
+            });
+
+            // Wait for all uploads to complete
+            images = await Promise.all(uploadPromises);
+            console.log('All images uploaded successfully:', images.length);
+        }
+
+        // Create auction with images
         const auction = await Auction.create({
             title,
             description,
@@ -17,7 +54,9 @@ exports.createAuction = async (req, res, next) => {
             category: category || 'other',
             seller: req.user._id,
             status: 'scheduled',
-            currentHighestBid: 0
+            currentHighestBid: 0,
+            images,
+            primaryImageIndex: images.length > 0 ? 0 : -1
         });
 
         // Populate seller information
@@ -35,6 +74,8 @@ exports.createAuction = async (req, res, next) => {
                 status: auction.status,
                 endTime: auction.endTime,
                 category: auction.category,
+                images: auction.images,
+                primaryImageIndex: auction.primaryImageIndex,
                 seller: {
                     _id: auction.seller._id,
                     name: auction.seller.name,
@@ -201,6 +242,128 @@ exports.deleteAuction = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Auction deleted successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Add new function to update auction images
+exports.updateAuctionImages = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { primaryImageIndex } = req.body;
+
+        const auction = await Auction.findById(id);
+        if (!auction) {
+            return next(new ApiError(404, 'Auction not found'));
+        }
+
+        // Check ownership
+        if (auction.seller.toString() !== req.user._id.toString()) {
+            return next(new ApiError(403, 'Not authorized to update this auction'));
+        }
+
+        // Process new images - manual Cloudinary upload
+        let newImages = [];
+        if (req.files && req.files.length > 0) {
+            console.log('Processing additional images:', req.files.length);
+
+            // Upload each file to Cloudinary manually
+            const uploadPromises = req.files.map(async (file) => {
+                console.log('Uploading additional file:', file.originalname);
+
+                try {
+                    const result = await uploadToCloudinary(file.buffer, file.originalname);
+
+                    return {
+                        publicId: result.public_id,
+                        url: result.url,
+                        secureUrl: result.secure_url,
+                        format: result.format,
+                        width: result.width,
+                        height: result.height,
+                        size: result.bytes,
+                        resourceType: result.resource_type,
+                        createdAt: new Date()
+                    };
+                } catch (error) {
+                    console.error('Failed to upload additional file:', file.originalname, error);
+                    throw new Error(`Failed to upload ${file.originalname}: ${error.message}`);
+                }
+            });
+
+            // Wait for all uploads to complete
+            newImages = await Promise.all(uploadPromises);
+            console.log('All additional images uploaded successfully:', newImages.length);
+        }
+
+        // Add new images to existing ones
+        auction.images.push(...newImages);
+
+        // Update primary image index if specified
+        if (primaryImageIndex !== undefined && primaryImageIndex >= 0 && primaryImageIndex < auction.images.length) {
+            auction.primaryImageIndex = primaryImageIndex;
+        }
+
+        await auction.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Images updated successfully',
+            data: {
+                images: auction.images,
+                primaryImageIndex: auction.primaryImageIndex
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Add function to delete auction image
+exports.deleteAuctionImage = async (req, res, next) => {
+    try {
+        const { id, imageIndex } = req.params;
+
+        const auction = await Auction.findById(id);
+        if (!auction) {
+            return next(new ApiError(404, 'Auction not found'));
+        }
+
+        // Check ownership
+        if (auction.seller.toString() !== req.user._id.toString()) {
+            return next(new ApiError(403, 'Not authorized to update this auction'));
+        }
+
+        const imageIndexNum = parseInt(imageIndex);
+        if (imageIndexNum < 0 || imageIndexNum >= auction.images.length) {
+            return next(new ApiError(400, 'Invalid image index'));
+        }
+
+        // Delete from Cloudinary
+        const imageToDelete = auction.images[imageIndexNum];
+        await cloudinary.uploader.destroy(imageToDelete.publicId);
+
+        // Remove from array
+        auction.images.splice(imageIndexNum, 1);
+
+        // Adjust primary image index if necessary
+        if (auction.primaryImageIndex >= auction.images.length) {
+            auction.primaryImageIndex = auction.images.length - 1;
+        } else if (auction.primaryImageIndex > imageIndexNum) {
+            auction.primaryImageIndex--;
+        }
+
+        await auction.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Image deleted successfully',
+            data: {
+                images: auction.images,
+                primaryImageIndex: auction.primaryImageIndex
+            }
         });
     } catch (error) {
         next(error);

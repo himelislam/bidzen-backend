@@ -15,7 +15,7 @@ exports.getMyBids = async (req, res, next) => {
     const bids = await Bid.find({ bidder: userId })
       .populate({
         path: 'auction',
-        select: 'title status endTime currentHighestBid seller',
+        select: 'title status endTime currentHighestBid seller category winner',
         populate: {
           path: 'seller',
           select: 'name email'
@@ -25,11 +25,26 @@ exports.getMyBids = async (req, res, next) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Add bid count for each auction
+    const bidsWithCount = await Promise.all(bids.map(async (bid) => {
+      if (bid.auction) {
+        const bidCount = await Bid.countDocuments({ auction: bid.auction._id });
+        return {
+          ...bid.toObject(),
+          auction: {
+            ...bid.auction.toObject(),
+            bidCount
+          }
+        };
+      }
+      return bid;
+    }));
+
     const total = await Bid.countDocuments({ bidder: userId });
 
     res.status(200).json({
       success: true,
-      data: bids,
+      data: bidsWithCount,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

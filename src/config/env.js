@@ -8,6 +8,9 @@ const envSchema = Joi.object({
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRES_IN: Joi.string().default('7d'),
     MONGO_URI: Joi.string().required(),
+    CLOUDINARY_CLOUD_NAME: Joi.string().required(),
+    CLOUDINARY_API_KEY: Joi.string().required(),
+    CLOUDINARY_API_SECRET: Joi.string().required(),
 }).unknown();
 
 const { error, value: envVars } = envSchema.validate(process.env);
@@ -27,5 +30,10 @@ module.exports = {
     },
     mongo: {
         uri: envVars.MONGO_URI,
+    },
+    cloudinary: {
+        cloudName: envVars.CLOUDINARY_CLOUD_NAME,
+        apiKey: envVars.CLOUDINARY_API_KEY,
+        apiSecret: envVars.CLOUDINARY_API_SECRET,
     }
 };
